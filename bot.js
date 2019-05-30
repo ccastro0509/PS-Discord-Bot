@@ -71,7 +71,7 @@ if (useDiscord) {
       if (!files.includes(`${command}.js`)) return message.channel.send('Command not found.');
       let commandFile = require(`./discordcommands/${command}.js`);
       if (commandFile.permissions === 'admin') {
-        if (!admin.includes(toId(by))) return message.channel.send('Access denied.');
+        if (!discordAdmin.includes(message.author.id)) return message.channel.send('Access denied.');
         return commandFile.commandFunction(Bot, args, message, client);
       }
       else if (commandFile.permissions === 'none') {
