@@ -112,7 +112,7 @@ Bot.on('chat', function (room, time, by, message) {
   }
   if (message === `${config.nickName}?`) return Bot.say(room, `Hi, I'm ${config.nickName}! My prefix is \`\`${config.prefix}\`\`. I hope to be of assistance! If there's any problems, please contact my owner: ${owner}.`);
   if (locked.includes(toId(by))) return;
-  if (message.startsWith('Hello')) return Bot.say(room, 'Hi!');
+  //if (message.startsWith('Hello')) return Bot.say(room, 'Hi!');
     if (!message.startsWith(prefix)) return;
     messagecontent = message.substr((prefix).length);
     let args = messagecontent.split(' ');
