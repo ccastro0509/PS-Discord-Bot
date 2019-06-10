@@ -35,7 +35,6 @@ if (useDiscord) {
     config.discordAdmin.forEach(function(element) {
       discordAdmin.push(element);
     });
-    //client.channels.get('535502328086790160').send('UwU');
   });
 
   client.on("message", async message => {
@@ -110,7 +109,7 @@ Bot.on('chat', function (room, time, by, message) {
         if (err) console.log(err);
       });
   }
-  if (message === `${config.nickName}?`) return Bot.say(room, `Hi, I'm ${config.nickName}! My prefix is \`\`${config.prefix}\`\`. I hope to be of assistance! If there's any problems, please contact my owner: ${owner}.`);
+  if (message === `${config.nickName}?`) return Bot.say(room, `Hi, I'm ${config.nickName}! My prefix is \`\`${config.prefix}\`\`. I hope to be of assistance! If there're any problems, please contact my owner: ${owner}.`);
   if (locked.includes(toId(by))) return;
   //if (message.startsWith('Hello')) return Bot.say(room, 'Hi!');
     if (!message.startsWith(prefix)) return;
@@ -177,7 +176,7 @@ Bot.on('chat', function (room, time, by, message) {
     });
 });  
 Bot.on('pm', function (by, message) {
-  if (!admin.includes(toId(by))) Bot.pm('PartMan', `${by}: ${message}`);
+  if (!admin.includes(toId(by))) Bot.pm(owner, `${by}: ${message}`);
   let mtoid = toId(message);
   if (mtoid.indexOf('invit') !== -1) Bot.pm(by, `/invite ${tcroom}`);
     if (!message.startsWith(prefix)) return;
