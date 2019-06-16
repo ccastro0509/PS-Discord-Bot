@@ -33,3 +33,6 @@ Useful commands (Echo, Berry, Pick, etc)
 Chat commands (take a look)
 
 Games (Ping, Random Hangman, etc)
+
+
+Edit the details in config.js, install required dependencies (using npm insall works), and node bot.js. Feel free to notify me of any errors!
