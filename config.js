@@ -6,11 +6,6 @@ exports.avatar = 'supernerd'; //Bot's default avatar.
 exports.discordActivity = ''; //Activity that will be displayed on Discord. Leave '' to disable.
 exports.discordAdmin = []; //Discord ID of administrator(s). [string]
 exports.owner = 'OWNER'; //Owner of the Bot. Does NOT give admin permissions.
-exports.admin = []; //Grants admin permissions.
-exports.alpha = []; //In-Bot ranks. 
-exports.beta = [];
-exports.gamma = []
-exports.locked = [];
 exports.autoJoin = ['botdevelopment']; //Rooms that the Bot will automatically join.
 exports.logrooms = []; //Rooms that will have their chats logged. Bot must be in these rooms to log. Please seek permission from room staff before adding here.
 
