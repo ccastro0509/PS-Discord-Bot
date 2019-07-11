@@ -248,11 +248,11 @@ Bot.on('pm', function (by, message) {
 Bot.on('error', function(room, emessage) {
   let str = room + ': ' + emessage;
   if (str.length > 300) str = str.substr(0,300);
-  Bot.pm('PartMan', str);
+  Bot.pm(owner, str);
 });
 Bot.on('popup', function(pmessage) {
   if (pmessage.length > 293) pmessage = pmessage.substr(0, 293);
-  Bot.pm('PartMan', 'Popup: ' + pmessage);
+  Bot.pm(owner, 'Popup: ' + pmessage);
 });
 Bot.on('queryresponse', function(response) {Bot.say(queryRoom, response);});
 let standard_input = process.stdin;
