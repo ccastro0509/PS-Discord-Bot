@@ -82,7 +82,7 @@ var Client = (function () {
 
 	Client.prototype.connect = function (retry) {
 		if (retry) {
-			this.debug('retrying...');
+			this.debug('Retrying...');
 		}
 		if (this.status.connected) return this.error("Already connected");
 		this.closed = false;
@@ -342,6 +342,10 @@ var Client = (function () {
 		this.send('|/avatar ' + avatar);
 	};
 
+	Client.prototype.setStatus = function (status) {
+		this.send('|/status ' + status);
+	};
+
 	Client.prototype.leaveRooms = function (rooms) {
 		var cmds = [];
 		var room;
@@ -446,12 +450,13 @@ var Client = (function () {
 				this.status.nickName = spl[1];
 				this.status.named = named;
 				if (config.avatar) this.status.avatar = config.avatar;
-				else this.status.avatar = avatar
+				else this.status.avatar = avatar;
 				if (this.events['rename'] && typeof this.events['rename'] === 'function') {
 					this.events['rename'](name, named, avatar);
 				}
 				if (named) this.joinRooms(this.opts.autoJoin);
-				if (config.avatar) this.setAvatar(config.avatar);
+				if (!config.avatar === '') this.setAvatar(config.avatar);
+				if (!config.status === '') this.setStatus(config.status);
 				break;
 			case 'init':
 				this.rooms[room] = {
@@ -544,7 +549,7 @@ var Client = (function () {
 				var by = spl[1];
 				var dest = spl[2];
 				spl.splice(0, 3);
-				if (by.substr(1) === this.status.nickName) {
+				if (toId(by) === toId(this.status.nickName)) {
 					if (this.events['pmsucess'] && typeof this.events['pmsucess'] === 'function') {
 						this.events['pmsucess'](dest, spl.join('|'));
 					}
@@ -554,6 +559,12 @@ var Client = (function () {
 					}
 				}
 				break;
+			case 'error':
+			    spl.shift();
+			    if (this.events['error'] && typeof this.events['error'] === 'function') {
+			    	this.events['error'](room, spl.join('|'));
+			    }
+			    break;
 			case 'n': case 'N':
 				var by = spl[1];
 				var old = spl[2];
