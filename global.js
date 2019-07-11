@@ -19,6 +19,7 @@ global.logRooms = [];
 global.prefix = config.prefix;
 global.owner = config.owner;
 global.nickName = config.nickName;
+global.spliceRank = false;
 global.toId = function toId(text) {
     return text.toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
