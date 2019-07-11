@@ -1,7 +1,7 @@
 # PS-Discord-Bot
 Pokémon Showdown Bot that also runs on Discord.
 Based on Ecuacion's connection.
-With thanks to cycro.
+With thanks to cycro, Morfent, JumboWhales, and XpRienzo.
 
 Yes, I did do some stuff myself.
 
@@ -35,4 +35,4 @@ Chat commands (take a look)
 Games (Ping, Random Hangman, etc)
 
 
-Edit the details in config.js, install required dependencies (using npm insall works), and node bot.js. Feel free to notify me of any errors!
+Edit the details in config.js and ranks.js (use the name ID), install required dependencies (using npm install works), and node bot.js. Feel free to notify me of any errors!
