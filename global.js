@@ -176,8 +176,6 @@ global.spliceRanks = function spliceRanks(spliceRank, by) {
     }
     else return 'UwU';
 }
-global.pokedex = require('./data/pokedex.js').BattlePokedex;
-global.pokelist = require('./data/pokelist.js').list;
 Array.prototype.frequencyOf = function(str) {
     let j = 0;
     for (let i = 0; i < this.length; i++) {
