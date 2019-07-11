@@ -8,6 +8,7 @@
     "discord.js": "^11.4.2",
     "googleapis": "^37.1.0",
     "git": "^0.1.5",
+    "js-md5": "^0.7.3",
     "pokemon": "^1.2.3",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
