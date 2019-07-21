@@ -67,262 +67,174 @@ exports.parse = {
 		var spl = message.split('|');
 		switch (spl[1]) {
 			case 'init':
-				if (!this.rooms[room]) {
-					this.rooms[room] = this.rooms[room] || {
-						name: null,
-						users: {}
-					};
+				this.rooms[room] = {
+					type: spl[1] || 'chat',
+					title: '',
+					users: {},
+					userCount: 0
+				};
+				this.roomcount = Object.keys(this.rooms).length;
+				if (this.events['joinroom'] && typeof this.events['joinroom'] === 'function') {
+					this.events['joinroom'](room, this.rooms[room].type);
 				}
 				break;
 			case 'nametaken':
 			case 'challstr':
-				if (spl[1] === 'challstr') {
-					Commands.clearstatus.call(this, '', config.nick, '');
-				}
-				if (spl[1] === 'challstr') {
-					initChallstr = spl
-				}
-				else {
-					spl = initChallstr;
-					forceRenamed = true;
-				}
-
-				info('received challstr, logging in...');
-				var id = spl[2];
-				var str = spl[3];
-
-				var requestOptions = {
-					hostname: this.actionUrl.hostname,
-					port: this.actionUrl.port,
-					path: this.actionUrl.pathname,
-					agent: false
+				var id = spl[1];
+				var str = spl[2];
+				this.challstr = {
+					id: id,
+					str: str
 				};
-
-				if (!config.pass) {
-					requestOptions.method = 'GET';
-					requestOptions.path += '?act=getassertion&userid=' + toId(config.nick) + '&challengekeyid=' + id + '&challenge=' + str;
+				if (this.opts.nickName !== null) this.rename(this.opts.nickName, this.opts.pass);
+				if (this.events['challstr'] && typeof this.events['challstr'] === 'function') {
+					this.events['challstr'](spl[1] + spl[2]);
 				}
-				else {
-					requestOptions.method = 'POST';
-					var data = 'act=login&name=' + config.nick + '&pass=' + config.pass + '&challengekeyid=' + id + '&challenge=' + str;
-					requestOptions.headers = {
-						'Content-Type': 'application/x-www-form-urlencoded',
-						'Content-Length': data.length
-					};
-				}
-
-				var req = https.request(requestOptions, function(res) {
-					res.setEncoding('utf8');
-					var data = '';
-					res.on('data', function(chunk) {
-						data += chunk;
-					});
-					res.on('end', function() {
-						if (data === ';') {
-							error('failed to log in; nick is registered - invalid or no password given');
-							process.exit(-1);
-						}
-						if (data.length < 50) {
-							error('failed to log in: ' + data);
-							process.exit(-1);
-						}
-
-						if (data.indexOf('heavy load') !== -1) {
-							error('the login server is under heavy load; trying again in one minute');
-							setTimeout(function() {
-								this.message(message);
-							}.bind(this), 60 * 1000);
-							return;
-						}
-
-						if (data.substr(0, 16) === '<!DOCTYPE html>') {
-							error('Connection error 522; trying agian in one minute');
-							setTimeout(function() {
-								this.message(message);
-							}.bind(this), 60 * 1000);
-							return;
-						}
-
-						try {
-							data = JSON.parse(data.substr(1));
-							if (data.actionsuccess) {
-								data = data.assertion;
-							}
-							else {
-								error('could not log in; action was not successful: ' + JSON.stringify(data));
-								process.exit(-1);
-							}
-						}
-						catch (e) {}
-						send('|/trn ' + config.nick + ',0,' + data);
-					}.bind(this));
-				}.bind(this));
-
-				req.on('error', function(err) {
-					error('login error: ' + sys.inspect(err));
-				});
-
-				if (data) req.write(data);
-				req.end();
 				break;
 			case 'updateuser':
-				if (spl[2] !== config.nick) return;
-
-				if (forceRenamed) {
-					forceRenamed = false;
-					return;
+				var name = spl[1];
+				var named = parseInt(spl[2]);
+				var avatar = spl[3];
+				this.status.nickName = spl[1];
+				this.status.named = named;
+				if (config.avatar) this.status.avatar = config.avatar;
+				else this.status.avatar = avatar;
+				if (this.events['rename'] && typeof this.events['rename'] === 'function') {
+					this.events['rename'](name, named, avatar);
 				}
-
-				if (spl[3] !== '1') {
-					error('failed to log in, still guest');
-					process.exit(-1);
-				}
-
-				ok('logged in as ' + spl[2]);
-
-				// Now join the rooms
-				if (config.avatar) {
-					send('|/avatar ' + config.avatar);
-				}
-				for (var i = 0, len = config.rooms.length; i < len; i++) {
-					var room = toId(config.rooms[i]);
-					if(this.rooms[room]) continue;
-					send('|/join ' + room);
-				}
-				try {
-					if (this.settings[config.serverid][toId(config.nick)].blacklist) {
-						var blacklist = this.settings[config.serverid][toId(config.nick)].blacklist;
-						for (var room in blacklist) {
-							this.updateBlacklistRegex(room);
-						}
-					}
-				}
-				catch (e) {
-					error('Blacklists not loaded..')
-				}
-				setInterval(this.cleanChatData.bind(this), 30 * 60 * 1000);
-				Bot.initMonitor();
+				if (named) this.joinRooms(this.opts.autoJoin);
+				if (!config.avatar === '') this.setAvatar(config.avatar);
+				if (!config.status === '') this.setStatus(config.status);
 				break;
 			case 'c':
-				var by = spl[2];
-				spl = spl.slice(3).join('|');
-				if (Bot.roomIsBanned(room)) return Bot.talk(room, '/leave', true);
-				if (this.isBlacklisted(toId(by), room)) return Bot.talk(room, '/roomban ' + by + ', Blacklisted user', true);
-				if (!Bot.hasRank(by, '%@&#~')) {
-					this.processChatData(toId(by), room, spl);
+				var by = spl[1];
+				var timeOff = Date.now();
+				spl.splice(0, 2);
+				if (isIntro) {
+					if (this.events['intro'] && typeof this.events['intro'] === 'function') {
+						this.events['intro']('chat', room, timeOff, by, spl.join('|'));
+					}
+					break;
 				}
-				else {
-					this.updateSeen(toId(by), 'c', room);
+				if (by.substr(1) === this.status.nickName) {
+					if (this.events['chatsucess'] && typeof this.events['chatsucess'] === 'function') {
+						this.events['chatsucess'](room, timeOff, spl.join('|'));
+					}
+				} else {
+					if (this.events['chat'] && typeof this.events['chat'] === 'function') {
+						this.events['chat'](room, timeOff, by, spl.join('|'));
+					}
 				}
-				if (toId(by) === toId(config.nick)) {
-					Bot.ranks[room] = by.charAt(0);
-				}
-				this.chatMessage(spl, by, room);
-				Plugins.mailUser(by, room);
 				break;
 			case 'c:':
-				var by = spl[3];
-				spl = spl.slice(4).join('|');
-				this.rooms[room].users[toId(by)] = by.charAt(0);
-				if (Bot.roomIsBanned(room)) return Bot.talk(room, '/leave', true);
-				if (this.isBlacklisted(toId(by), room)) return Bot.talk(room, '/roomban ' + by + ', Blacklisted user', true);
-				if (!Bot.hasRank(by, '%@&#~')) {
-					this.processChatData(toId(by), room, spl);
+				var by = spl[2];
+				var timeOff = parseInt(spl[1]) * 1000;
+				spl.splice(0, 3);
+				if (isIntro) {
+					if (this.events['intro'] && typeof this.events['intro'] === 'function') {
+						this.events['intro']('chat', room, timeOff, by, spl.join('|'));
+					}
+					break;
 				}
-				else {
-					this.updateSeen(toId(by), 'c', room);
+				if (by.substr(1) === this.status.nickName) {
+					if (this.events['chatsucess'] && typeof this.events['chatsucess'] === 'function') {
+						this.events['chatsucess'](room, timeOff, spl.join('|'));
+					}
+				} else {
+					if (this.events['chat'] && typeof this.events['chat'] === 'function') {
+						this.events['chat'](room, timeOff, by, spl.join('|'));
+					}
 				}
-				this.updateSeen(by, spl[1], room);
-				if (toId(by) === toId(config.nick)) {
-					Bot.ranks[room] = by.charAt(0);
-				}
-				if (Bot.isDev(by) && spl.slice(0, 4) === '>>>>' && toId(by) !== toId(config.nick)) {
-					Bot.eval(spl, room);
-				}
-				this.chatMessage(spl, by, room);
-				Plugins.mailUser(by, room);
 				break;
 			case 'pm':
-				var by = spl[2];
-				this.chatMessage(spl.slice(4).join('|'), by, ',' + by);
-				if (Bot.isDev(by) && spl.slice(4).join('|').slice(0, 4) === '>>>>') {
-					Bot.eval(spl.slice(4).join('|'), ',' + by);
+				var by = spl[1];
+				var dest = spl[2];
+				spl.splice(0, 3);
+				if (toId(by) === toId(this.status.nickName)) {
+					if (this.events['pmsucess'] && typeof this.events['pmsucess'] === 'function') {
+						this.events['pmsucess'](dest, spl.join('|'));
+					}
+				} else {
+					if (this.events['pm'] && typeof this.events['pm'] === 'function') {
+						this.events['pm'](by, spl.join('|'));
+					}
 				}
-				if (pmUser.indexOf(toId(by)) === -1 && config.commandcharacter.indexOf(spl.slice(4).join('|').charAt(0)) === -1 && spl.slice(4).join('|').indexOf('/invite') !== 0 && spl.slice(4).join('|').indexOf('>>>>') !== 0) {
-					Bot.talk(',' + by, config.pmmessage);
-					pmUser.push(toId(by));
-				}
-
 				break;
+			case 'n': 
 			case 'N':
-				var by = spl[2];
-				delete this.rooms[room].users[toId(spl[3])];
-				this.rooms[room].users[toId(by)] = by.charAt(0);
-				if (toId(by) === toId(config.nick)) {
-					Bot.ranks[room] = by.charAt(0);
+				var by = spl[1];
+				var old = spl[2];
+				if (this.rooms[room]) {
+					if (this.rooms[room].users[toId(old)]) delete this.rooms[room].users[toId(old)];
+					this.rooms[room].users[toId(by)] = by;
 				}
-				if (this.isBlacklisted(toId(by), room)) return Bot.talk(room, '/roomban ' + by + ', Blacklisted user');
-				this.updateSeen(spl[3], spl[1], toId(by));
-				Bot.botBanTransfer(by, spl[3]);
-				/*
-				if(config.alts){
-					this.updateProfile(by, room, spl[3]);
-				}*/
-				Plugins.mailUser(by, room);
+				if (this.events['userrename'] && typeof this.events['userrename'] === 'function') {
+					this.events['userrename'](room, old, by);
+				}
 				break;
 			case 'J':
 			case 'j':
-				var by = spl[2];
-				this.rooms[room].users[toId(by)] = by.charAt(0);
-				if (config.rooms.indexOf(room) === -1 && room.substr(0, 7) !== 'battle-' && room.substr(0, 10) !== 'groupchat-') {
-					config.rooms.push(room);
-					fs.writeFileSync('data/newrooms/' + config.nick + '_' + config.serverid + '.json', JSON.stringify(config.rooms));
+				var by = spl[1];
+				if (this.rooms[room] && !this.rooms[room].users[toId(by)]) {
+					this.rooms[room].users[toId(by)] = by;
+					this.rooms[room].userCount++;
 				}
-				if (Bot.roomIsBanned(room)) return Bot.talk(room, '/leave');
-				if (toId(by) === toId(config.nick)) {
-					Bot.ranks[room] = by.charAt(0);
+				if (this.events['userjoin'] && typeof this.events['userjoin'] === 'function') {
+					this.events['userjoin'](room, by);
 				}
-				if (this.isBlacklisted(toId(by), room)) return Bot.talk(room, '/roomban ' + by + ', Blacklisted user');
-				Plugins.autorank(by, room);
-				Plugins.joinMessages(room, by);
-				this.updateSeen(toId(by), spl[1], room);
-				Plugins.mailUser(by, room);
 				break;
 			case 'l':
 			case 'L':
-				this.updateSeen(toId(spl[2]), spl[1], room);
-				delete this.rooms[room].users[toId(spl[2])];
+				var by = spl[1];
+				if (this.rooms[room] && this.rooms[room].users[toId(by)]) {
+					delete this.rooms[room].users[toId(by)];
+					this.rooms[room].userCount--;
+				}
+				if (this.events['userleave'] && typeof this.events['userleave'] === 'function') {
+					this.events['userleave'](room, by);
+				}
 				break;
 			case 'raw':
+			case 'html':
 				this.parseEmotes(spl[2], room);
 				break;
 			case 'users':
-				var userList = spl[2].split(',').slice(1);
-				for (var i = 0; i < userList.length; i++) {
-					this.rooms[room].users[toId(userList[i])] = userList[i].charAt(0);
-					if (toId(userList[i]) === toId(config.nick)) {
-						Bot.ranks[room] = userList[i].charAt(0);
+				if (isIntro) {
+					if (this.events['intro'] && typeof this.events['intro'] === 'function') {
+						this.events['intro']('raw', room, message.substr(2 + spl[0].length));
 					}
+					break;
+				}
+				if (this.events['raw'] && typeof this.events['raw'] === 'function') {
+					this.events['raw'](room, message.substr(2 + spl[0].length));
 				}
 				break;
 			case 'title':
-				if (spl[2].indexOf(config.nick + ' vs. ') == 0 || spl[2].indexOf('vs. ' + config.nick) > -1) {
-					break;
+				if (this.rooms[room]) this.rooms[room].title = spl[1];
+				if (isIntro) {
+					if (this.events['intro'] && typeof this.events['intro'] === 'function') {
+						this.events['intro']('title', room, spl[1]);
+					}
 				}
-				join(spl[2]);
-				this.rooms[room].name = spl[2];
-				break;
 			case 'popup':
-				this.parseTransfer(spl.slice(2).join('|'))
+				if (this.events['popup'] && typeof this.events['popup'] === 'function') {
+					this.events['popup'](message.substr(7));
+				}
 				break;
 			case 'deinit':
-				if (room.substr(0, 7) !== 'battle-') {
-					leave(room);
+				if (this.rooms[room]) {
+					if (this.events['leaveroom'] && typeof this.events['leaveroom'] === 'function') {
+						this.events['leaveroom'](room);
+					}
+					delete this.rooms[room];
+					this.roomcount = Object.keys(this.rooms).length;
 				}
-				delete this.rooms[room];
-				delete Bot.ranks[room];
-				Commands.resetroom.call(this, '', config.nick, room);
 				break;
+			case 'noinit':
+				if (this.events['joinfailure'] && typeof this.events['joinfailure'] === 'function') {
+					this.events['joinfailure'](room, spl[1], spl[2]);
+				}
+				break;		
 			case 'updatechallenges':
 				var challengeData = JSON.parse(spl[2]).challengesFrom;
 				var players = Object.keys(challengeData);
