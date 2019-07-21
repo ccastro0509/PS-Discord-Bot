@@ -13,6 +13,22 @@ if (config.prefix === 'PREFIX' || config.nickName === 'USERNAME' || config.pass 
 global.useDiscord = true;
 if (config.token === '')  useDiscord = false;
 
+function loadFunctions() {
+	global.Commands = {};
+	global.Parse = require('./parser.js').parse;
+	var commandFiles = fs.readdirSync('./commands/');
+	for (var i = 0; i < commandFiles.length; i++) {
+		try {
+			Object.merge(Commands, require('./commands/' + commandFiles[i]).commands);
+			ok('Loaded command files: ' + commandFiles[i])
+		}
+		catch (e) {
+			error('Unable to load command files: ' + commandFiles[i]);
+			console.log(e.stack)
+		}
+	}
+}
+
 let options = {
   serverid: config.serverid,
   loginServer: 'https://play.pokemonshowdown.com/~~' + config.serverid +'/action.php',
