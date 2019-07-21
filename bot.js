@@ -28,6 +28,7 @@ function loadFunctions() {
 		}
 	}
 }
+loadFunctions;
 
 let options = {
   serverid: config.serverid,
