@@ -1,7 +1,7 @@
-exports.prefix = "PREFIX";
+exports.prefix = "&";
 exports.nickName = "Lurien";
 exports.pass = 'XYg4S42U5bCLU'; 
-exports.token = '&';
+exports.token = '';
 exports.avatar = 'cilan';
 exports.discordActivity = '';
 exports.discordAdmin = [];
